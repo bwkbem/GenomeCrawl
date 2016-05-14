@@ -1,30 +1,3 @@
-Lambda <- 4;
-
-Bonferroni <- FALSE;
-
-#QueryStartID <-  "SPy0739";  
-#QueryEndID <-  "SPy0745"
-
-QueryStartID <-  "SPy0002";  
-QueryEndID <-  "SPy2217"
-
-Genome <- TRUE;
-
-MintStat <- 0;
-
-
-            ################# INPUT / OUTPUT  #################
-
-StatDataDirectory <- "/home/kirkb/Playarea/Bayesian Clustering/Distribution Depend/Data/Input/CyberT/";
-
-StatDataFile1 <- "G8bA8P2tStatNOL4.GeCyTBH";
-StatDataFile2 <- "G8bA8P2tStatNOL4.CyTBH";
-StatHeaderLength <- 9;  #DO NOT EDIT
-
-
-OutputDirectory <- "/home/kirkb/Playarea/Bayesian Clustering/Distribution Depend/Data/Output/";
-
-OutputFile <- "G8bA8P2tStat";
 
 #From PgKMicroarrayWhole.R
 ###############################################################################
@@ -47,8 +20,7 @@ OutputFile <- "G8bA8P2tStat";
                  ############################################
 
 #Define Input Directory and File
-StatDataIn1 <- paste(StatDataDirectory, StatDataFile1, sep="");
-StatDataIn2 <- paste(StatDataDirectory, StatDataFile2, sep="");
+StatDataGenome <- paste(StatDataDirectory, StatDataGenomeFile, sep="");
 
 #Define Output Dirctory with Prefix
 OutputPrefix <- paste(OutputDirectory, OutputFile, sep="");
@@ -58,20 +30,23 @@ OutputPrefix <- paste(OutputDirectory, OutputFile, sep="");
              ##########  DEFINE TEMPORARY CONSTANTS  #############
              #####################################################
 
-#Data Positions in CyberT .GeCyTBH output file
-xStatIDPos1 <- 1;
-xStattStatPos1 <- 2;
-xStatpValuePos1  <- 3;
-xStatBHpValuePos1  <- 4;
-xStatBonpValuePos1 <- 5;
-xStatGenomePositionPos1 <- 6;
+#Data Positions in CyberT .GeCyTDS output file
+xIDPos <- 1;
+xGenomePositionPos <- 2;
 
-#Data Positions in CyberT .CyTBH output file
-xStatIDPos2 <- 2;
-xStatMPos2 <- 6;
-xStatAdjStndErrPos2 <- 7;
-xStatArrayNumberPos2 <- 8;
-xStatIntensityPos2 <- 9;
+if (CyberT) { 
+    xtStatPos <- 3;
+    xpValuePos  <- 5;
+} else {
+    xtStatPos <- 4;
+    xpValuePos  <- 6;
+}
+
+xMPos <- 7;
+xIntensityPos <- 8;
+xBioSamplePos <- 9;
+xArrayNumberPos <- 10;
+
 
 ###############################################################################
 #                             VARIABLE DECLARATION                            #
@@ -86,28 +61,25 @@ xStatIntensityPos2 <- 9;
                         #####  Input Tables  ######
 
 #Input StatSigData 
-xStatDataTable1  <- data.frame(read.delim(StatDataIn1,
+xStatDataTable  <- data.frame(read.delim(StatDataGenome,
                                        skip=StatHeaderLength));
-
-xStatDataTable2  <- data.frame(read.delim(StatDataIn2,
-                                       skip=StatHeaderLength));
-
 
 
                  #####  Create Vectors from Input Tables  #####
 
 #Data from StatSigTable
-ID <- as.character(as.vector(xStatDataTable1[,xStatIDPos1]));
-tStat <- as.numeric(as.vector(xStatDataTable1[, xStattStatPos1]));
-pValue  <- as.numeric(as.vector(xStatDataTable1[, xStatpValuePos1]));
-BHpValue  <- as.numeric(as.vector(xStatDataTable1[, xStatBHpValuePos1]));
-BonpValue <- as.numeric(as.vector(xStatDataTable1[, xStatBonpValuePos1]));
+ID <- as.character(as.vector(xStatDataTable[,xIDPos]));
 GenomePos <- as.numeric(as.vector(
-                                 xStatDataTable1[, xStatGenomePositionPos1]));
-
+                                 xStatDataTable[, xGenomePositionPos ]));
+tStat <- as.numeric(as.vector(xStatDataTable[, xtStatPos]));
+pValue  <- as.numeric(as.vector(xStatDataTable[, xpValuePos]));
+LogFoldChange <- as.numeric(as.vector(xStatDataTable[, xMPos]));
+Intensity <- as.numeric(as.vector(xStatDataTable[, xIntensityPos]));
+BioSampleNumber <- as.numeric(as.vector(xStatDataTable[, xBioSamplePos]));
+ArrayNumber <- as.numeric(as.vector(xStatDataTable[, xArrayNumberPos]));
 
 #Find Stat Lambda
-xLambdaScan <- scan(file=StatDataIn1, what=character(0), sep="\t",
+xLambdaScan <- scan(file=StatDataGenome, what=character(0), sep="\t",
                         nlines=StatHeaderLength);
 xLambdaString <- grep("Lambda = ", xLambdaScan,
                           value=TRUE);
@@ -121,27 +93,6 @@ if (length(xLambdaString) != 0) {
   StatLambda <- "NotFound";
 }
 
-## Oragnize select data from second Stat file relative to the first
-StatID2 <- as.character(as.vector(xStatDataTable2[,xStatIDPos2]));
-StatM <- as.numeric(as.vector(xStatDataTable2[, xStatMPos2]));
-StatAdjStndErr <- as.numeric(as.vector(xStatDataTable2[, xStatAdjStndErrPos2]));
-StatArrayNumber <- as.numeric(as.vector(xStatDataTable2[, xStatArrayNumberPos2]));
-StatIntensity <- as.numeric(as.vector(xStatDataTable2[, xStatIntensityPos2]));
-
-LogFoldChange <- rep(0, length(ID));
-Intensity <- rep(0, length(ID));
-AdjStndErr <- rep(0, length(ID));
-ArrayNumber <- rep(0, length(ID));
-
-
-for (i in 1:length(StatID2)) {
-  GeneFilter <- as.logical(match(ID, StatID2[i], nomatch=0));
-
-  LogFoldChange[GeneFilter] <- StatM[i];
-  Intensity[GeneFilter] <- StatIntensity[i];
-  AdjStndErr[GeneFilter] <- StatAdjStndErr[i];
-  ArrayNumber[GeneFilter] <- StatArrayNumber[i];
-}
 
 #Index GenomeGenes and Define Query Start and Query End
 
@@ -689,16 +640,18 @@ PostBonpValue[which(PostBonpValue > 1)] <- 1;
 BonPairpValue <- 2 * (1-PairPost);
 BonPairpValue[which(BonPairpValue > 1)] <- 1;
 
-
+#Need to Reorganize!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 OutPlotData <- cbind(PlotData[,1], tStat, LogFoldChange, Intensity,
                      AdjStndErr, ArrayNumber, BHpValue, BonpValue,
                      PostBonpValue, BonPairpValue,
                      PlotData[, 2:length(PlotData[1,])]);
 
 
+
+
 # Plot Data
-FilterHeader1 <- paste("StatData File1 = ", StatDataIn1, sep="");
-FilterHeader2 <- paste("StatData File2 = ", StatDataIn2, sep="");
+FilterHeader1 <- paste("StatData File1 = ", StatDataGenome, sep="");
+FilterHeader2 <- " ";
 FilterHeader3 <- c(paste("Query Start = ", as.character(QueryStartID),
                                            sep=""),
                  paste("Query End = ", as.character(QueryEndID), sep=""));
@@ -706,11 +659,11 @@ FilterHeader4 <- paste("Window Limit = ", as.character(WindowLimit),
                                            sep="");   
 FilterHeader5 <- c("Stat Param:",
                    paste("Lambda = ", as.character(StatLambda), sep=""));
-FilterHeader6 <- c(paste("Bonferroni = ",
-                         as.character(Bonferroni), sep=""));
-FilterHeader7 <- "Data Generated by GCKu.R";
+FilterHeader6 <- " ";
+FilterHeader7 <- "Data Generated by DeleuzeCrawl.R";
 FilterHeader8 <- date();
 
+##### Need to reorganize!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 FilterHeaderTable <-  c("Gene", "tStat", "LogFoldChng", "RMSInt",
                         "AdjStndErr", "ArrayNumber", "BHpValue", "BonpValue",
                         "Bon Post p", "Bon Pair Post p", "Post p",
