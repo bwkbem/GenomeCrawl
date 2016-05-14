@@ -117,8 +117,6 @@ ClPermProb <- 0;
 
 ClLength <- 0;
 
-DegreesOfFreedom <- as.numeric(StatLambda)-2;
-
 if (Crawl) {
     for (i in QueryStartPos:(QueryEndPos-1)) {
         if (tStat[i] > MintStat) {
@@ -169,9 +167,9 @@ if (Crawl) {
     ClLength <- QueryEndPos-QueryStartPos+1;
 }
 
-
+########### Tested up to here
 #cbind(ClStartID, ClEndID, ClPermProb, ClLength)
-########### Edited up to here
+
 GeName <- "blank";
 GeClLength <- 0;
 
@@ -194,17 +192,18 @@ PgKet <- 0;
 PgEKu <- 0;
 PgIKu <- 0;
 
-rPg <- 0;
-rPKsub <- 0;
-rPKu <- 0;
-rPKmi <- 0;
-rPKet <- 0;
-
-GetStat <- 0
+GetStat <- 0;
+GepValue <- 0;
 GeLogFoldChng <- 0;
-GeStndErr <- 0;
 GeIntensity <- 0;
+GeBioSampleNumber <- 0;
 GeArrayNumber <- 0;
+
+if (CyberT) {
+    DegreesOfFreedom <- as.numeric(StatLambda)-2;
+} else {
+    DegreesOfFreedom <- as.numeric(ArrayNumber)-1;
+}
 
 for (i in 1:length(ClStartID)) {
   
@@ -213,7 +212,7 @@ for (i in 1:length(ClStartID)) {
 
       ClPos <- 1:ClLength[i];
     
-      ReftStat <- c(ReftStat, tStat[j]);
+      ReftStat <- tStat[j];
 
       tKsubSet <- tStat[ClStartPos[i]:ClEndPos[i]];
 
@@ -224,7 +223,7 @@ for (i in 1:length(ClStartID)) {
       Ksub <- c(Ksub, sum(tKsubSet));
 
   
-      Pg <- c(Pg, 1-2*(1-pt(ReftStat[length(ReftStat)], DegreesOfFreedom)));
+      Pg <- c(Pg, 1-2*(1-pt(ReftStat, DegreesOfFreedom)));
 
       PKsub <- c(PKsub, 1-2*(1-pt(Ksub[length(Ksub)], DegreesOfFreedom)));
 
@@ -264,9 +263,10 @@ for (i in 1:length(ClStartID)) {
       GeName <- c(GeName, ID[j]);
       GeClLength <- c(GeClLength, ClLength[i]);
       GetStat <- c(GetStat, tStat[j]);
+      GepValue <- c(GepValue, pValue[j]);
       GeLogFoldChng <- c(GeLogFoldChng, LogFoldChange[j]);
-      GeStndErr <- c(GeStndErr, AdjStndErr[j]);
       GeIntensity <- c(GeIntensity, Intensity[j]);
+      GeBioSampleNumber <- c(GeBioSampleNumber, BioSampleNumber[j]);
       GeArrayNumber <- c(GeArrayNumber, ArrayNumber[j]);
     }
   }
@@ -275,14 +275,14 @@ for (i in 1:length(ClStartID)) {
 
 GeName <- GeName[2:length(GeName)];
 GetStat <- GetStat[2:length(GeName)];
+GepValue <- GepValue[2:length(GepValue)];
 GeLogFoldChng <- GeLogFoldChng[2:length(GeLogFoldChng)];
-GeStndErr <- GeStndErr[2:length(GeStndErr)];
 GeIntensity <- GeIntensity[2:length(GeIntensity)];
+GeBioSampleNumber <- GeBioSampleNumber[2:length(GeBioSampleNumber)];
 GeArrayNumber <- GeArrayNumber[2:length(GeArrayNumber)];
 GeClLength <- GeClLength[2:length(GeClLength)];
 
 
-ReftStat <- ReftStat[2:length(ReftStat)];
 Ku <- Ku[2:length(Ku)];
 Ksub <- Ksub[2:length(Ksub)];
 
@@ -292,12 +292,6 @@ PKsub <- PKsub[2:length(PKsub)];
 PKu <- PKu[2:length(PKu)];
 PKmi <- PKmi[2:length(PKmi)];
 PKet <- PKet[2:length(PKet)];
-
-rPg <- rPg[2:length(rPg)];
-rPKsub <- rPKsub[2:length(rPKsub)];
-rPKu <- rPKu[2:length(rPKu)];
-rPKmi <- rPKmi[2:length(rPKmi)];
-rPKet <- rPKet[2:length(rPKet)];
 
 PgKu <- PgKu[2:length(PgKu)];
 PgIKu <- PgIKu[2:length(PgIKu)];
@@ -320,20 +314,13 @@ pgKsub <- 1-PgKsub;
 pgKmi <- 1-PgKmi;
 pgKet <- 1-PgKet;
 
-ClusterSize <- length(Pg[which(Pg>0)]); 
-Bon <- ClusterSize * (1-Pg);
-Sidak <- (1-(Pg**(ClusterSize)));
-
-
 p <- PKu -Pg;
 
+########### Edited up to here
 ttStat <- tStat[which(tStat>0)];
-tBHp <- BHpValue[which(tStat>0)];
 tStatFilter <- order(ttStat);
 
 ttStat <- ttStat[tStatFilter];
-tBHp <- tBHp[tStatFilter];
-tSidak <- Sidak[tStatFilter];
 tp <- p[tStatFilter];
 tpg <- pg[tStatFilter];
 
@@ -349,265 +336,6 @@ tPKmi <- PKmi[tStatFilter];
 
 rankp <- (1:length(ttStat))/length(ttStat);
 rankp <- rankp[order(rankp, decreasing=TRUE)]
-
-postscript(file=paste("/home/kirkb/Playarea/Bayesian Clustering/Presentations/Thinking/temp/logpvslogTPlusMicroDoF", as.character(DegreesOfFreedom), ".eps", sep=""),  horizontal=TRUE, onefile=TRUE);
-
-
-#x11(width=11, height=8);
-
-y <- log10(tp);
-x <- log10(ttStat);
-
-
-plot(y~x, type="p",
-     xlab="", ylab="", xlim=c(min(x), max(x)), ylim=c(min(y), max(y)),
-     cex=2, pch=1);
-
-y <- log10(tSidak);
-x <- log10(ttStat);
-
-points(x, y, cex=2, pch=1, col="red");
-
-
-y <- log10(tBHp);
-x <- log10(ttStat);
-
-points(x, y, cex=2, pch=1, col="green");
-
-
-y <- log10(rankp);
-x <- log10(ttStat);
-
-points(x, y, cex=2, pch=1, col="blue");
-
-legend(-3, -3.5, c("Phenom", "Sidak", "BH"), cex=2, pch=1, col=c("black", "red", "green"));
-
-dev.off();
-
-
-postscript(file=paste("/home/kirkb/Playarea/Bayesian Clustering/Presentations/Thinking/temp/pvsTMicroDoF", as.character(DegreesOfFreedom), ".eps", sep=""),  horizontal=TRUE, onefile=TRUE);
-
-
-#x11(width=11, height=8);
-
-y <- tp;
-x <- ttStat;
-
-
-plot(y~x, type="p",
-     xlab="", ylab="", xlim=c(min(x), max(x)), ylim=c(min(y), max(y)),
-     cex=2, pch=1);
-
-y <- tSidak;
-x <- ttStat;
-
-points(x, y, cex=2, pch=1, col="red");
-
-
-y <- tBHp;
-x <- ttStat;
-
-points(x, y, cex=2, pch=1, col="green");
-
-
-legend(55, 1, c("Phenom", "Sidak", "BH"), cex=2, pch=1, col=c("black", "red", "green"));
-
-dev.off()
-##########
-y <- log10(rankp);
-x <- log10(ttStat);
-
-points(x, y, cex=2, pch=1, col="blue");
-
-y <- log10(exp(-1*ttStat));
-x <- log10(ttStat);
-
-points(x, y, cex=2, pch=1, col="orange");
-
-
-
-                       ############################
-                       #####  OUTPUT RESULTS  #####
-                       ############################
-
-postscript(file=paste("/home/kirkb/Playarea/Bayesian Clustering/Presentations/Thinking/temp/PgPhenomMicroDoF", as.character(DegreesOfFreedom), "DotThree.eps", sep=""),  horizontal=TRUE, onefile=TRUE);
-
-
-library(grDevices);
-
-rgb.palette <- colorRampPalette(c("red", "orange", "yellow", "green", "blue"),
-                                space = "rgb");
-
-Prob.palette <- rgb.palette(length(p));
-ProbFilter <- order(p, decreasing=FALSE);
-tProb <- p[ProbFilter];
- 
-tPK <- PKsub[ProbFilter];
-tPg <- Pg[ProbFilter];
-
-#tPK <- tPK[which(GeClLength > 2)];
-#tPg <- tPg[which(GeClLength > 2)];
-
-Min <- 0;
-Max <- 1;
-
-#x11(width=11, height=8);
-
-plot(tPK~tPg, type="p",
-     xlab="", ylab="", xlim=c(Min, Max), ylim=c(Min, Max),
-     cex=2, pch=16, col=Prob.palette);
-
-points(tPg[which(tProb > 0.80)],
-       tPK[which(tProb > 0.80)],
-       cex=0.5, pch=16, col="white");
-
-points(tPg[which(tProb > 0.90)],
-       tPK[which(tProb > 0.90)],
-       cex=0.5, pch=16, col="grey60");
-
-points(tPg[which(tProb > 0.95)],
-       tPK[which(tProb > 0.95)],
-       cex=0.5, pch=16, col="black");
-dev.off()
- 
-
-
-postscript(file=paste("/home/kirkb/Playarea/Bayesian Clustering/Presentations/Thinking/temp/PgEKuScatterDoF", as.character(DegreesOfFreedom), "DotThree.eps", sep=""),  horizontal=TRUE, onefile=TRUE);
-
-
-library(grDevices);
-
-rgb.palette <- colorRampPalette(c("red", "orange", "yellow", "green", "blue"),
-                                space = "rgb");
-
-Prob.palette <- rgb.palette(length(Bon));
-ProbFilter <- order((1-Bon), decreasing=FALSE);
-tProb <- 1-Bon[ProbFilter];
- 
-tPK <- PKsub[ProbFilter];
-tPg <- Pg[ProbFilter];
-
-#tPK <- tPK[which(GeClLength > 2)];
-#tPg <- tPg[which(GeClLength > 2)];
-
-Min <- 0;
-Max <- 1;
-
-#x11(width=11, height=8);
-
-plot(tPK~tPg, type="p",  main=paste("Bon dof =",
-     as.character(DegreesOfFreedom), sep=" "),
-     xlab="Pg", ylab = "PKsub", xlim=c(Min, Max), ylim=c(Min, Max),
-     cex=1, pch=16, col=Prob.palette);
-
-points(tPg[which(tProb > 0.80)],
-       tPK[which(tProb > 0.80)],
-       cex=0.5, pch=16, col="white");
-
-points(tPg[which(tProb > 0.90)],
-       tPK[which(tProb > 0.90)],
-       cex=0.5, pch=16, col="grey60");
-
-points(tPg[which(tProb > 0.95)],
-       tPK[which(tProb > 0.95)],
-       cex=0.5, pch=16, col="black");
-
-
-x11(width=11, height=8);
-
-
-Min <- 0;
-Max <- 1;
-
-plot(PKsub~Pg, type="p",  main=paste("dof =",
-     as.character(DegreesOfFreedom), sep=" "),
-     xlab="Pg", ylab = "PKsub", xlim=c(Min, Max), ylim=c(Min, Max),
-     cex=0.5, pch=16, col="black");
-
-x11(width=11, height=8);
-
-
-Min <- 0;
-Max <- 1;
-
-
-plot(rPKsub~rPg, type="p",  main=paste("dof =",
-     as.character(DegreesOfFreedom), sep=" "),
-     xlab="Pg", ylab = "PKsub", xlim=c(Min, Max), ylim=c(Min, Max),
-     cex=0.5, pch=16, col="red");
-
-x11(width=11, height=8);
-
-
-Min <- 0;
-Max <- 1;
-
-plot(PKmi~Pg, type="p",  main=paste("dof =",
-     as.character(DegreesOfFreedom), sep=" "),
-     xlab="Pg", ylab = "PKmi", xlim=c(Min, Max), ylim=c(Min, Max),
-     cex=0.5, pch=16, col="black");
-
-x11(width=11, height=8);
-
-
-Min <- 0;
-Max <- 1;
-
-
-plot(rPKmi~rPg, type="p",  main=paste("dof =",
-     as.character(DegreesOfFreedom), sep=" "),
-     xlab="Pg", ylab = "PKmi", xlim=c(Min, Max), ylim=c(Min, Max),
-     cex=0.5, pch=16, col="red");
-
-
-##############################################
-
-BonFilter <-  order(Bon, decreasing=FALSE);
-SidakFilter <-  order(Sidak, decreasing=FALSE);
-PgKuFilter <-  order(PgKu, decreasing=FALSE);
-PgKsubFilter <-  order(PgKsub, decreasing=FALSE);
-BHpValueFilter <-  order(BHpValue, decreasing=FALSE);
-
-
-Bon[BonFilter];
-BHpValue[BHpValueFilter];
-Sidak[SidakFilter];
-PgKu[PgKuFilter];
-PgKsub[PgKsubFilter];
-
-tempGeneData <- cbind(GeName, Bon, Sidak, PgKsub, PgKu,
-                      PGeKIntersect, PGe, PKu,
-                      PKsub, ClStartName, ClEndName, ClStartPos, ClEndPos);
-
-######################  PLOTS  ####################
-####??????? Debug b4 use
-
-n <- 5;
-Finish <- trunc(1000/n);
-ntPKu <- 0;
-
-for (i in 1:Finish) {
-  RandomFilter <- sample(1:length(trtStat), n);
-
-  tKutStat <- sum(trtStat[RandomFilter]);
-  ntPKu <- c(ntPKu, 1 - (2 * (1-pt(tKutStat, DegreesOfFreedom))));
-
-}
-
-ntPKu <- ntPKu[2:length(ntPKu)];
-
-PlotLimit <- 0.5;
-x11(width=11, height=8);
-plot(density(ntPKu), main="PKu  n = ",xlim=c(0, 1.2));
-
-
-
-
-
-
-
-
-
 
 #############################################################################
 PosteriorPos <- 2;
