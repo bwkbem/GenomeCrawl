@@ -58,14 +58,14 @@ xArrayNumberPos <- 10;
 #NEAREST CLEANUP SHOULD BE IDENTIFIED TO INSURE PROPER PERMANCY
 
 
-                        #####  Input Tables  ######
+                        #####  Input Table  ######
 
 #Input StatSigData 
 xStatDataTable  <- data.frame(read.delim(StatDataGenome,
                                        skip=StatHeaderLength));
 
 
-                 #####  Create Vectors from Input Tables  #####
+                 #####  Create Vectors from Input Table  #####
 
 #Data from StatSigTable
 ID <- as.character(as.vector(xStatDataTable[,xIDPos]));
@@ -106,52 +106,72 @@ rm(list=ls(pat="^x"));
 ###############################################################################
 #                               MAIN BODY                                     #
 ###############################################################################
-#Search for Statistically Significant Clusters Using a Dynamic Windowing
-#Algorithm
+#Make Clusters Using a Dynamic Windowing Algorithm
 
 ClStartID <- "blank";
 ClEndID <- "blank";
 ClStartPos <- 0;
 ClEndPos <- 0;
 
+ClPermProb <- 0;
+
 ClLength <- 0;
 
-DegreesOfFreedom <- as.numeric(StatLambda)-1;
+DegreesOfFreedom <- as.numeric(StatLambda)-2;
 
-if (!Genome) {
-for (i in QueryStartPos:QueryEndPos) {
-  if (tStat[i] > MintStat) {
-    Search <- 1;
+if (Crawl) {
+    for (i in QueryStartPos:(QueryEndPos-1)) {
+        if (tStat[i] > MintStat) {
+            Search <- 1;
+            SearchSize <- GapLimit;
+            while ((Search <= SearchSize) && ((Search+i) <= QueryEndPos)) { 
+                if (tStat[(i+Search)] > MintStat) {
+                    tStatSet <- sum(tStat[i:(i+Search)]);
+
+                    b <- 0;
+                    NumberOfProbes <- Search + 1;
+                    for (j in 1:TotalPermutations
+                         ) {
+                        PertStatSet <- sum(sample(tStat, NumberOfProbes));
+                        if (PertStatSet > tStatSet) {b <- b+1}  
+                    }
+
+                    PermProb <- b/TotalPermutations;
+                    SearchSize <- SearchSize + 1;
+
+        
+                    ClStartPos <- c(ClStartPos, i);
+                    ClEndPos <- c(ClEndPos, i + Search);
     
-    while ((tStat[(i+Search)] > MintStat) && ((Search+i) <= QueryEndPos)) {
+                    ClStartID <- c(ClStartID, ID[i]);
+                    ClEndID <- c(ClEndID, ID[i+Search]);
             
-      ClStartPos <- c(ClStartPos, i);
-      ClEndPos <- c(ClEndPos, i + Search);
-
-      ClStartID <- c(ClStartID, ID[i]);
-      ClEndID <- c(ClEndID, ID[i+Search]);
-
-      ClLength <- c(ClLength, Search + 1);
-
-      Search <- Search + 1;
+                    ClPermProb <- c(ClPermProb, PermProb)
+                    ClLength <- c(ClLength, Search + 1);
+                }
+                Search <- Search + 1;
+            }
+        }
     }
-  }
-}
 
-ClStartID <- ClStartID[2:length(ClStartID)];
-ClEndID <- ClEndID[2:length(ClEndID)];
-ClStartPos <- ClStartPos[2:length(ClStartPos)];
-ClEndPos <- ClEndPos[2:length(ClEndPos)];
-ClLength <- ClLength[2:length(ClLength)];
+    ClStartID <- ClStartID[2:length(ClStartID)];
+    ClEndID <- ClEndID[2:length(ClEndID)];
+    ClStartPos <- ClStartPos[2:length(ClStartPos)];
+    ClEndPos <- ClEndPos[2:length(ClEndPos)];
+    ClPermProb <- ClPermProb[2:length(ClPermProb)];
+    ClLength <- ClLength[2:length(ClLength)];
 } else {
-ClStartID <- ID[QueryStartPos];
-ClEndID <- ID[QueryEndPos];;
-ClStartPos <- QueryStartPos;
-ClEndPos <- QueryEndPos;
-ClLength <- QueryEndPos-QueryStartPos+1;
-
+    ClStartID <- ID[QueryStartPos];
+    ClEndID <- ID[QueryEndPos];;
+    ClStartPos <- QueryStartPos;
+    ClEndPos <- QueryEndPos;
+    ClPermProb <- 1;
+    ClLength <- QueryEndPos-QueryStartPos+1;
 }
 
+
+#cbind(ClStartID, ClEndID, ClPermProb, ClLength)
+########### Edited up to here
 GeName <- "blank";
 GeClLength <- 0;
 
