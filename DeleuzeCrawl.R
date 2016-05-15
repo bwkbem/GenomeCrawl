@@ -34,13 +34,8 @@ OutputPrefix <- paste(OutputDirectory, OutputFile, sep="");
 xIDPos <- 1;
 xGenomePositionPos <- 2;
 
-if (CyberT) { 
-    xtStatPos <- 3;
-    xpValuePos  <- 5;
-} else {
-    xtStatPos <- 4;
-    xpValuePos  <- 6;
-}
+xtStatPos <- 3;
+xpValuePos  <- 5;
 
 xMPos <- 7;
 xIntensityPos <- 8;
@@ -117,8 +112,14 @@ ClPermProb <- 0;
 
 ClLength <- 0;
 
+Track <- seq(QueryStartPos, QueryEndPos, 100);
+
 if (Crawl) {
     for (i in QueryStartPos:(QueryEndPos-1)) {
+        if (as.logical(match(i, Track, nomatch=0))) {
+            print(paste("Crawl at Position", i, "of", QueryEndPos, date(),
+                        sep=" "))
+        }
         if (tStat[i] > MintStat) {
             Search <- 1;
             SearchSize <- GapLimit;
@@ -167,11 +168,27 @@ if (Crawl) {
     ClLength <- QueryEndPos-QueryStartPos+1;
 }
 
-########### Tested up to here
-#cbind(ClStartID, ClEndID, ClPermProb, ClLength)
+print(paste("Finished Crawling", date(), sep=" "));
+
+
 
 GeName <- "blank";
+GePosition <- 0;
+
+GetStat <- 0;
+GepValue <- 0;
+GeLogFoldChng <- 0;
+GeIntensity <- 0;
+GeBioSampleNumber <- 0;
+GeArrayNumber <- 0;
+
+GeClStartID <- " ";
+GeClEndID <- " ";
+GeClStartPos <- 0;
+GeClEndPos <- 0;
+GeClPermProb <- 0;
 GeClLength <- 0;
+
 
 ReftStat <- 0;
 
@@ -192,24 +209,20 @@ PgKet <- 0;
 PgEKu <- 0;
 PgIKu <- 0;
 
-GetStat <- 0;
-GepValue <- 0;
-GeLogFoldChng <- 0;
-GeIntensity <- 0;
-GeBioSampleNumber <- 0;
-GeArrayNumber <- 0;
+DegreesOfFreedom <- as.numeric(StatLambda)-2;
 
-if (CyberT) {
-    DegreesOfFreedom <- as.numeric(StatLambda)-2;
-} else {
-    DegreesOfFreedom <- as.numeric(ArrayNumber)-1;
-}
+
+Track <- seq(1, length(ClStartID), 100);
 
 for (i in 1:length(ClStartID)) {
-  
-  for (j in ClStartPos[i]:ClEndPos[i]) {
-    if (tStat[j] > 0) {
+    if (as.logical(match(i, Track, nomatch=0))) {
+        print(paste("At Cluster", i, "of", length(ClStartID), date(), sep=" "))
+    }
 
+  for (j in ClStartPos[i]:ClEndPos[i]) {
+    if (tStat[j] > MintStat) {
+
+        
       ClPos <- 1:ClLength[i];
     
       ReftStat <- tStat[j];
@@ -261,6 +274,7 @@ for (i in 1:length(ClStartID)) {
 
 
       GeName <- c(GeName, ID[j]);
+      GePosition <- c(GePosition, j);
       GeClLength <- c(GeClLength, ClLength[i]);
       GetStat <- c(GetStat, tStat[j]);
       GepValue <- c(GepValue, pValue[j]);
@@ -268,19 +282,37 @@ for (i in 1:length(ClStartID)) {
       GeIntensity <- c(GeIntensity, Intensity[j]);
       GeBioSampleNumber <- c(GeBioSampleNumber, BioSampleNumber[j]);
       GeArrayNumber <- c(GeArrayNumber, ArrayNumber[j]);
+
+      GeClStartID <- c(GeClStartID, ClStartID[i]);
+      GeClEndID <- c(GeClEndID, ClEndID[i]);
+      GeClStartPos <- c(GeClStartPos, ClStartPos[i]);
+      GeClEndPos <- c(GeClEndPos, ClEndPos[i]);
+      GeClPermProb <- c(GeClPermProb, ClPermProb[i]);
+
+
     }
   }
 }
 
+print(paste("Finished Cluster Calculations", date(), sep=" "));
 
 GeName <- GeName[2:length(GeName)];
-GetStat <- GetStat[2:length(GeName)];
+GePosition <- GePosition[2:length(GePosition)];
+GetStat <- GetStat[2:length(GetStat)];
 GepValue <- GepValue[2:length(GepValue)];
 GeLogFoldChng <- GeLogFoldChng[2:length(GeLogFoldChng)];
 GeIntensity <- GeIntensity[2:length(GeIntensity)];
 GeBioSampleNumber <- GeBioSampleNumber[2:length(GeBioSampleNumber)];
 GeArrayNumber <- GeArrayNumber[2:length(GeArrayNumber)];
 GeClLength <- GeClLength[2:length(GeClLength)];
+
+GeClStartID <- GeClStartID[2:length(GeClStartID)];
+GeClEndID <- GeClEndID[2:length(GeClEndID)];
+GeClStartPos <- GeClStartPos[2:length(GeClStartPos)];
+GeClEndPos <- GeClEndPos[2:length(GeClEndPos)];
+GeClPermProb <- GeClPermProb[2:length(GeClPermProb)];
+
+
 
 
 Ku <- Ku[2:length(Ku)];
@@ -303,6 +335,7 @@ PgKmi <- PgKmi[2:length(PgKmi)];
 PgKet <- PgKet[2:length(PgKet)];
 
 
+
 pg <- 1-Pg;
 
 pgKu <- 1-PgKu;
@@ -316,152 +349,86 @@ pgKet <- 1-PgKet;
 
 p <- PKu -Pg;
 
+cbind(GeClStartID, GeClEndID, GeClStartPos, GeClEndPos, GeClPermProb, GeClLength, GeName, GetStat, GepValue, GeLogFoldChng, GeIntensity, GeBioSampleNumber, GeArrayNumber, Ku, Ksub, Pg, PKsub, PKu, PKmi, PKet, PgKu, PgIKu, PgEKu, PgKsub, PgKmi, PgKet)
+
 ########### Edited up to here
-ttStat <- tStat[which(tStat>0)];
-tStatFilter <- order(ttStat);
 
-ttStat <- ttStat[tStatFilter];
-tp <- p[tStatFilter];
-tpg <- pg[tStatFilter];
-
-tpgKu <- pgKu[tStatFilter];
-tpgKmi <- pgKmi[tStatFilter];
-tpgIKu <- pgIKu[tStatFilter];
-tpgKsub <- pgKsub[tStatFilter];
-
-tPKu <- PKu[tStatFilter];
-tPKmi <- PKmi[tStatFilter];
-
-
-
-rankp <- (1:length(ttStat))/length(ttStat);
-rankp <- rankp[order(rankp, decreasing=TRUE)]
-
-#############################################################################
-PosteriorPos <- 2;
-ClLengthPos <- 4;
-
-Posterior <- as.numeric(as.vector(tempGeneData[,PosteriorPos])) * ClLength;
-
-Fill <- c(1, 1, 1, 0, 0, 0, 0, NA, NA, 0, 0);
-
-
-PlotData <- tempGeneData[1,]; #To be removed later only used to prime
-
-
-
-for (i in ID) {
-  GeneFilter <- as.logical(match(GeName, i, nomatch=0));
-
-  if (sum(GeneFilter) > 0) {
-
-    GeGeneData <- tempGeneData[GeneFilter,];
-
-    if (sum(GeneFilter) == 1) {
-      PlotData <- rbind(PlotData, GeGeneData);     
-    } else {
-      subPosterior <- Posterior[GeneFilter];
-  
-      ProbFilter <- order(subPosterior);
-      OrderedGeGeneData <- GeGeneData[ProbFilter,];
-      PlotData <- rbind(PlotData, OrderedGeGeneData[1,]);
-    }
-  } else {
-
-    tempFill <- c(i, Fill)
-    PlotData <- rbind(PlotData, tempFill);     
-
-  }
-}
-
-#rm(tempGeneData);
-
-PlotData <- PlotData[(2:length(PlotData[,1])),];
-
-
-PostBonpValue <- as.numeric(as.vector(PlotData[,PosteriorPos])) *
-                                 as.numeric(as.vector(PlotData[,ClLengthPos]));
-
-PostBonpValue[which(PostBonpValue > 1)] <- 1;
-
-
-BonPairpValue <- 2 * (1-PairPost);
-BonPairpValue[which(BonPairpValue > 1)] <- 1;
-
-#Need to Reorganize!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-OutPlotData <- cbind(PlotData[,1], tStat, LogFoldChange, Intensity,
-                     AdjStndErr, ArrayNumber, BHpValue, BonpValue,
-                     PostBonpValue, BonPairpValue,
-                     PlotData[, 2:length(PlotData[1,])]);
+OutPlotData <- cbind(GeClStartID, GeClEndID, GeClStartPos, GeClEndPos,
+                     GeClPermProb, GeClLength, GeName, GePosition, GetStat,
+                     GepValue, GeLogFoldChng, GeIntensity, GeBioSampleNumber,
+                     GeArrayNumber, Ku, Ksub, Pg, PKsub, PKu, PKmi, PKet,
+                     PgKu, PgIKu, PgEKu, PgKsub, PgKmi, PgKet); 
 
 
 
 
 # Plot Data
 FilterHeader1 <- paste("StatData File1 = ", StatDataGenome, sep="");
-FilterHeader2 <- " ";
+FilterHeader2 <- paste("Crawl = ", as.character(Crawl), sep="");
 FilterHeader3 <- c(paste("Query Start = ", as.character(QueryStartID),
                                            sep=""),
                  paste("Query End = ", as.character(QueryEndID), sep=""));
-FilterHeader4 <- paste("Window Limit = ", as.character(WindowLimit),
-                                           sep="");   
-FilterHeader5 <- c("Stat Param:",
+FilterHeader4 <- c(paste("Limit of Min tStat = ", as.character(MintStat),
+                         sep=""),
+                   paste("Gap Limit = ", as.character(GapLimit),
+                                           sep=""));   
+FilterHeader5 <- paste("Total Permutations = ",
+                         as.character(TotalPermutations), sep="");
+FilterHeader6 <- c("Stat Param:",
                    paste("Lambda = ", as.character(StatLambda), sep=""));
-FilterHeader6 <- " ";
 FilterHeader7 <- "Data Generated by DeleuzeCrawl.R";
 FilterHeader8 <- date();
 
-##### Need to reorganize!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-FilterHeaderTable <-  c("Gene", "tStat", "LogFoldChng", "RMSInt",
-                        "AdjStndErr", "ArrayNumber", "BHpValue", "BonpValue",
-                        "Bon Post p", "Bon Pair Post p", "Post p",
-                        "Ge p", "Cl Size", "Ge I Cl P",
-                        "Ge P", "P Ku", "P Ksub", "Cluster Start",
-                        "Cluster End", "Cl Start Pos", "Cl End Pos");
+
+FilterHeaderTable <- cbind("ClStartID", "ClEndID", "ClStartPos", "ClEndPos",
+                           "ClPermProb", "ClLength", "Gene", "Gene Pos",
+                           "tStat", "pValue", "LogFoldChng", "Intensity",
+                           "BioSampleNumber", "ArrayNumber", "Ku", "Ksub",
+                           "Pg", "PKsub", "PKu", "PKmi", "PKet", "PgKu",
+                           "PgIKu", "PgEKu", "PgKsub", "PgKmi", "PgKet") 
+
 
 cat(FilterHeader1, file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\n");
+                     ".GeClGC", sep=""), sep="\n");
 cat(FilterHeader2, file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\t", append=TRUE);
+                     ".GeClGC", sep=""), sep="\t", append=TRUE);
 cat(c(""), file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\n", append=TRUE);
+                     ".GeClGC", sep=""), sep="\n", append=TRUE);
 cat(FilterHeader3, file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\t", append=TRUE);
+                     ".GeClGC", sep=""), sep="\t", append=TRUE);
 cat(c(""), file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\n", append=TRUE);
+                     ".GeClGC", sep=""), sep="\n", append=TRUE);
 cat(FilterHeader4, file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\t", append=TRUE);
+                     ".GeClGC", sep=""), sep="\t", append=TRUE);
 cat(c(""), file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\n", append=TRUE);
+                     ".GeClGC", sep=""), sep="\n", append=TRUE);
 cat(FilterHeader5, file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\t", append=TRUE);
+                     ".GeClGC", sep=""), sep="\t", append=TRUE);
 cat(c(""), file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\n", append=TRUE);
+                     ".GeClGC", sep=""), sep="\n", append=TRUE);
 cat(FilterHeader6, file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\t", append=TRUE);
+                     ".GeClGC", sep=""), sep="\t", append=TRUE);
 cat(c(""), file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\n", append=TRUE);
+                     ".GeClGC", sep=""), sep="\n", append=TRUE);
 cat(FilterHeader7, file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\t", append=TRUE);
+                     ".GeClGC", sep=""), sep="\t", append=TRUE);
 cat(c(""), file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\n", append=TRUE);
+                     ".GeClGC", sep=""), sep="\n", append=TRUE);
 cat(FilterHeader8, file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\t", append=TRUE);
+                     ".GeClGC", sep=""), sep="\t", append=TRUE);
 cat(c(""), file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\n", append=TRUE);
-cat(c(""), file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\n", append=TRUE);
+                     ".GeClGC", sep=""), sep="\n", append=TRUE);
 cat(FilterHeaderTable, file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\t", append=TRUE);
+                     ".GeClGC", sep=""), sep="\t", append=TRUE);
 cat(c(""), file=paste(OutputPrefix, "L", StatLambda,
-                     ".GeKuPD", sep=""), sep="\n", append=TRUE);
+                     ".GeClGC", sep=""), sep="\n", append=TRUE);
 
 write.table(OutPlotData, file=paste(OutputPrefix, 
-                               "L", StatLambda, ".GeKuPD", sep=""),
+                               "L", StatLambda, ".GeClGC", sep=""),
                                quote=FALSE, sep="\t", col.names=FALSE,
                                row.names=FALSE, append=TRUE);
 
 
 
-rm(PlotData);
+#rm(list=ls());
 

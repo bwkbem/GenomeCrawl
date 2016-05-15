@@ -1,6 +1,4 @@
 
-CyberT <- TRUE;
-
 Crawl <- TRUE;  #Make sub clusters with MintStat as breaks
 
 MintStat <- 0;
@@ -9,11 +7,11 @@ GapLimit <- 3;  #Number of gaps allowed in a cluster
 TotalPermutations <- 2000;
 
 
-QueryStartID <-  "SPy0121";  
-QueryEndID <-  "SPy0124"
+#QueryStartID <-  "SPy0121";  
+#QueryEndID <-  "SPy0124"
 
-#QueryStartID <-  "SPy0002";  
-#QueryEndID <-  "SPy2217"
+QueryStartID <-  "SPy0002";  
+QueryEndID <-  "SPy2217"
 
 
 
